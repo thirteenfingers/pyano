@@ -7,4 +7,4 @@ This is a work in progress, and there is a great deal of error checking (such as
  s d  g h j  l ;  2 3 4  6 7  9 0 -
 z x cv b n m, . /q w e rt y ui o p []
 
-Also, I have found that certain combinations of more than three simultaneous notes may not play properly. As far as I can tell this is a hardware limitation.
+Also, I have found that certain combinations of three or more simultaneous notes may not play properly. As far as I can tell this is a hardware limitation.

@@ -6,7 +6,7 @@ import re
 import pygame
 
 # keep the config file wherever, just update this line accordingly
-configfile = "/home/ben/devel/piano/.pianoconfig"
+configfile = "/home/ben/devel/pyano/.pyanoconfig"
 
 # parses config file if it exists and return dictionary (empty on failure)
 # assumes config file is of form:

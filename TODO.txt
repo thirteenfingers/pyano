@@ -1,0 +1,17 @@
+Desired Features:
+
+Space bar = Sustain pedal
+    * should be very simple
+
+Shift keys = Octave doubling
+    * should be very simple
+
+Chord macros with ctrl, alt etc.
+    * like what?
+
+Accompanimental patterns like on the Portatone
+    * requires extra graphical interface features
+    * how to control? want different modes
+        * fig-bass? bass notes plus harmonic directions
+        * 
+    * how to set tempo? 

@@ -165,7 +165,9 @@ def runpyano(filename):
     key_num = dict( zip(keys, range(len(keys))) )
     num_sound = dict( zip(range(len(sounds)), sounds) )
 
-    is_playing = {k: False for k in keys}
+    is_key_down = {k: False for k in keys}
+    is_key_caught = {k: False for k in keys}
+    is_pedal_down = False
 
     while True:
 
@@ -176,10 +178,12 @@ def runpyano(filename):
 
         if event.type == pygame.KEYDOWN:
 
-            if (key in key_num.keys()) and (not is_playing[key]):
+            if (key in key_num.keys()) and (not is_key_down[key]):
                 depresskey(screen, keyrects, key_num[key])
                 num_sound[key_num[key]+offset].play()
-                is_playing[key] = True
+                is_key_down[key] = True
+                if is_pedal_down:
+                    is_key_caught[key] = True
 
             elif event.key == pygame.K_PAGEUP and offset <= len(sounds) - len(keys):
                 offset += 12
@@ -189,16 +193,27 @@ def runpyano(filename):
                 offset -= 12
                 print("Shift range DOWN an octave")
 
+            elif event.key == pygame.K_SPACE:
+                is_pedal_down = True
+                print("-ENOTSUP")
+
             elif event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 raise KeyboardInterrupt
                 return
 
-        elif event.type == pygame.KEYUP and key in key_num.keys():
+        elif event.type == pygame.KEYUP:
 
-            releasekey(screen, keyrects, key_num[key])
-            num_sound[key_num[key]+offset].fadeout(50) # stops with 50ms fadeout
-            is_playing[key] = False
+            if event.key == pygame.K_SPACE:
+                is_pedal_down = False
+                for k in keys:
+                    is_key_caught[k] = False
+                print("-ENOTSUP")
+
+            elif key in key_num.keys():
+                releasekey(screen, keyrects, key_num[key])
+                num_sound[key_num[key]+offset].fadeout(50) # stops with 50ms fadeout
+                is_key_down[key] = False
 
 # do everything
 runpyano(configfile)

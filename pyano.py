@@ -8,6 +8,12 @@ import pygame
 # keep the config file wherever, just update this line accordingly
 configfile = "/home/ben/devel/pyano/.pyanoconfig"
 
+# colors used
+colors = {'white' : (255, 255, 255),
+          'downwhite' : (191, 191, 191),
+          'black' : (32, 32, 32),
+          'downblack' : (64, 64, 64)}
+
 # a Note is a wrapper class for one of the 88 sounds
 class Note:
 
@@ -24,24 +30,39 @@ class Note:
         self.sound.fadeout(50)
         self.is_playing = False
 
-# a Key corresponds to one of the keyboard keys displayed on the screen
-class Key():
+# a PianoKey corresponds to one of the keyboard keys displayed on the screen
+class PianoKey():
 
-    def __init__(self, n, i):
+    # n : Note object
+    # i : index from 0 to 36 of the 3-octave keyboard
+    # img : the pygame screen
+    # c_dc_rects : entry from the keyrects list
+    def __init__(self, n, i, img, c_dc_rects):
         self.note = n
         self.next_note = n
         self.is_down = False
         self.index = i
+        self.img = img
+        (c, dc, rects) = c_dc_rects
+        self.rects = rects
+        self.color = colors[c]
+        self.downcolor = colors[dc]
 
     def press(self):
         self.is_down = True
         self.note.play()
+        for r in self.rects:
+            self.img.fill(self.downcolor, r)
+            pygame.display.update(r)
 
     def release(self):
         self.is_down = False
         if not(self.note.is_caught):
             self.note.stop()
         self.note = self.next_note
+        for r in self.rects:
+            self.img.fill(self.color, r)
+            pygame.display.update(r)
 
     def update(self, n):
         self.next_note = n
@@ -71,14 +92,8 @@ def getwavs(libpath):
     fps, wav = wavpairs[0]
     return (fps, [ n for (f, n) in wavpairs ])
 
-# colors used
-colors = {'white' : (255, 255, 255),
-          'downwhite' : (191, 191, 191),
-          'black' : (32, 32, 32),
-          'downblack' : (64, 64, 64)}
-
 # complete map of where keys are
-# num -> (color, [rect1, rect2ifnecessary])
+# num -> (color, downcolor, [rect1, rect2ifnecessary])
 # white key = 35 pixels across (including 1 pixel border)
 # black key (of 2) = 21
 # black key (of 3) = 20
@@ -87,91 +102,85 @@ colors = {'white' : (255, 255, 255),
 # there's probably a more elegant way of doing this than hard-coding all the
 #   Rect objects
 keyrects = {
-    0 : ('white', [pygame.Rect(1, 1, 19, 89),
-                   pygame.Rect(1, 90, 33, 59)]),
-    1 : ('black', [pygame.Rect(22, 1, 19, 88)]),
-    2 : ('white', [pygame.Rect(43, 1, 19, 89),
-                   pygame.Rect(36, 90, 33, 59)]),
-    3 : ('black', [pygame.Rect(64, 1, 19, 88)]),
-    4 : ('white', [pygame.Rect(85, 1, 19, 89),
-                   pygame.Rect(71, 90, 33, 59)]),
-    5 : ('white', [pygame.Rect(106, 1, 18, 89),
-                   pygame.Rect(106, 90, 33, 59)]),
-    6 : ('black', [pygame.Rect(126, 1, 18, 88)]),
-    7 : ('white', [pygame.Rect(146, 1, 18, 89),
-                   pygame.Rect(141, 90, 33, 59)]),
-    8 : ('black', [pygame.Rect(166, 1, 18, 88)]),
-    9 : ('white', [pygame.Rect(186, 1, 18, 89),
-                   pygame.Rect(176, 90, 33, 59)]),
-    10 : ('black', [pygame.Rect(206, 1, 18, 88)]),
-    11 : ('white', [pygame.Rect(226, 1, 18, 89),
-                   pygame.Rect(211, 90, 33, 59)]),
-    12 : ('white', [pygame.Rect(1 + 245, 1, 19, 89),
-                   pygame.Rect(1 + 245, 90, 33, 59)]),
-    13 : ('black', [pygame.Rect(22 + 245, 1, 19, 88)]),
-    14 : ('white', [pygame.Rect(43 + 245, 1, 19, 89),
-                   pygame.Rect(36 + 245, 90, 33, 59)]),
-    15 : ('black', [pygame.Rect(64 + 245, 1, 19, 88)]),
-    16 : ('white', [pygame.Rect(85 + 245, 1, 19, 89),
-                   pygame.Rect(71 + 245, 90, 33, 59)]),
-    17 : ('white', [pygame.Rect(106 + 245, 1, 18, 89),
-                   pygame.Rect(106 + 245, 90, 33, 59)]),
-    18 : ('black', [pygame.Rect(126 + 245, 1, 18, 88)]),
-    19 : ('white', [pygame.Rect(146 + 245, 1, 18, 89),
-                   pygame.Rect(141 + 245, 90, 33, 59)]),
-    20 : ('black', [pygame.Rect(166 + 245, 1, 18, 88)]),
-    21 : ('white', [pygame.Rect(186 + 245, 1, 18, 89),
-                   pygame.Rect(176 + 245, 90, 33, 59)]),
-    22 : ('black', [pygame.Rect(206 + 245, 1, 18, 88)]),
-    23 : ('white', [pygame.Rect(226 + 245, 1, 18, 89),
-                   pygame.Rect(211 + 245, 90, 33, 59)]),
-    24 : ('white', [pygame.Rect(1 + 490, 1, 19, 89),
-                   pygame.Rect(1 + 490, 90, 33, 59)]),
-    25 : ('black', [pygame.Rect(22 + 490, 1, 19, 88)]),
-    26 : ('white', [pygame.Rect(43 + 490, 1, 19, 89),
-                   pygame.Rect(36 + 490, 90, 33, 59)]),
-    27 : ('black', [pygame.Rect(64 + 490, 1, 19, 88)]),
-    28 : ('white', [pygame.Rect(85 + 490, 1, 19, 89),
-                   pygame.Rect(71 + 490, 90, 33, 59)]),
-    29 : ('white', [pygame.Rect(106 + 490, 1, 18, 89),
-                   pygame.Rect(106 + 490, 90, 33, 59)]),
-    30 : ('black', [pygame.Rect(126 + 490, 1, 18, 88)]),
-    31 : ('white', [pygame.Rect(146 + 490, 1, 18, 89),
-                   pygame.Rect(141 + 490, 90, 33, 59)]),
-    32 : ('black', [pygame.Rect(166 + 490, 1, 18, 88)]),
-    33 : ('white', [pygame.Rect(186 + 490, 1, 18, 89),
-                   pygame.Rect(176 + 490, 90, 33, 59)]),
-    34 : ('black', [pygame.Rect(206 + 490, 1, 18, 88)]),
-    35 : ('white', [pygame.Rect(226 + 490, 1, 18, 89),
-                   pygame.Rect(211 + 490, 90, 33, 59)]),
-    36 : ('white', [pygame.Rect(736, 1, 33, 148)])
+    0 : ('white', 'downwhite', [pygame.Rect(1, 1, 19, 89),
+                                pygame.Rect(1, 90, 33, 59)]),
+    1 : ('black', 'downblack', [pygame.Rect(22, 1, 19, 88)]),
+    2 : ('white', 'downwhite', [pygame.Rect(43, 1, 19, 89),
+                                pygame.Rect(36, 90, 33, 59)]),
+    3 : ('black', 'downblack', [pygame.Rect(64, 1, 19, 88)]),
+    4 : ('white', 'downwhite', [pygame.Rect(85, 1, 19, 89),
+                                pygame.Rect(71, 90, 33, 59)]),
+    5 : ('white', 'downwhite', [pygame.Rect(106, 1, 18, 89),
+                                pygame.Rect(106, 90, 33, 59)]),
+    6 : ('black', 'downblack', [pygame.Rect(126, 1, 18, 88)]),
+    7 : ('white', 'downwhite', [pygame.Rect(146, 1, 18, 89),
+                                pygame.Rect(141, 90, 33, 59)]),
+    8 : ('black', 'downblack', [pygame.Rect(166, 1, 18, 88)]),
+    9 : ('white', 'downwhite', [pygame.Rect(186, 1, 18, 89),
+                                pygame.Rect(176, 90, 33, 59)]),
+    10 : ('black', 'downblack', [pygame.Rect(206, 1, 18, 88)]),
+    11 : ('white', 'downwhite', [pygame.Rect(226, 1, 18, 89),
+                                 pygame.Rect(211, 90, 33, 59)]),
+    12 : ('white', 'downwhite', [pygame.Rect(1 + 245, 1, 19, 89),
+                                 pygame.Rect(1 + 245, 90, 33, 59)]),
+    13 : ('black', 'downblack', [pygame.Rect(22 + 245, 1, 19, 88)]),
+    14 : ('white', 'downwhite', [pygame.Rect(43 + 245, 1, 19, 89),
+                                 pygame.Rect(36 + 245, 90, 33, 59)]),
+    15 : ('black', 'downblack', [pygame.Rect(64 + 245, 1, 19, 88)]),
+    16 : ('white', 'downwhite', [pygame.Rect(85 + 245, 1, 19, 89),
+                                 pygame.Rect(71 + 245, 90, 33, 59)]),
+    17 : ('white', 'downwhite', [pygame.Rect(106 + 245, 1, 18, 89),
+                                 pygame.Rect(106 + 245, 90, 33, 59)]),
+    18 : ('black', 'downblack', [pygame.Rect(126 + 245, 1, 18, 88)]),
+    19 : ('white', 'downwhite', [pygame.Rect(146 + 245, 1, 18, 89),
+                                 pygame.Rect(141 + 245, 90, 33, 59)]),
+    20 : ('black', 'downblack', [pygame.Rect(166 + 245, 1, 18, 88)]),
+    21 : ('white', 'downwhite', [pygame.Rect(186 + 245, 1, 18, 89),
+                                 pygame.Rect(176 + 245, 90, 33, 59)]),
+    22 : ('black', 'downblack', [pygame.Rect(206 + 245, 1, 18, 88)]),
+    23 : ('white', 'downwhite', [pygame.Rect(226 + 245, 1, 18, 89),
+                                 pygame.Rect(211 + 245, 90, 33, 59)]),
+    24 : ('white', 'downwhite', [pygame.Rect(1 + 490, 1, 19, 89),
+                                 pygame.Rect(1 + 490, 90, 33, 59)]),
+    25 : ('black', 'downblack', [pygame.Rect(22 + 490, 1, 19, 88)]),
+    26 : ('white', 'downwhite', [pygame.Rect(43 + 490, 1, 19, 89),
+                                 pygame.Rect(36 + 490, 90, 33, 59)]),
+    27 : ('black', 'downblack', [pygame.Rect(64 + 490, 1, 19, 88)]),
+    28 : ('white', 'downwhite', [pygame.Rect(85 + 490, 1, 19, 89),
+                                 pygame.Rect(71 + 490, 90, 33, 59)]),
+    29 : ('white', 'downwhite', [pygame.Rect(106 + 490, 1, 18, 89),
+                                 pygame.Rect(106 + 490, 90, 33, 59)]),
+    30 : ('black', 'downblack', [pygame.Rect(126 + 490, 1, 18, 88)]),
+    31 : ('white', 'downwhite', [pygame.Rect(146 + 490, 1, 18, 89),
+                                 pygame.Rect(141 + 490, 90, 33, 59)]),
+    32 : ('black', 'downblack', [pygame.Rect(166 + 490, 1, 18, 88)]),
+    33 : ('white', 'downwhite', [pygame.Rect(186 + 490, 1, 18, 89),
+                                 pygame.Rect(176 + 490, 90, 33, 59)]),
+    34 : ('black', 'downblack', [pygame.Rect(206 + 490, 1, 18, 88)]),
+    35 : ('white', 'downwhite', [pygame.Rect(226 + 490, 1, 18, 89),
+                                 pygame.Rect(211 + 490, 90, 33, 59)]),
+    36 : ('white', 'downwhite', [pygame.Rect(736, 1, 33, 148)])
                            }
 
 # here begins the dirty graphics work
 def drawkeyboard(img, krects):
     img.fill((0,0,0))
-    for (c, rects) in krects.values():
+    for (c, downc, rects) in krects.values():
         for r in rects:
             img.fill(colors[c], r)
     pygame.display.flip()
     return
 
-
 # k is the number of the key from 0 to 36 inclusive (3 octaves + extra at top)
 def depresskey(img, krects, k):
-    (c, rects) = krects[k]
-    newc = (0, 0, 0)
-    if c == 'white':
-        newc = colors['downwhite']
-    if c == 'black':
-        newc = colors['downblack']
+    (c, downc, rects) = krects[k]
     for r in rects:
-        img.fill(newc, r)
+        img.fill(colors[downc], r)
         pygame.display.update(r)
     return
 
 def releasekey(img, krects, k):
-    (c, rects) = krects[k]
+    (c, downc, rects) = krects[k]
     for r in rects:
         img.fill(colors[c], r)
         pygame.display.update(r)
@@ -187,6 +196,7 @@ def runpyano(filename):
         return
 
     fps, wavs = getwavs(conf['libpath'])
+    keyboardkeys = open(conf['keyboard']).read().split('\n')
 
     # set up the window and draw the keyboard
     screen = pygame.display.set_mode([770,150])
@@ -195,23 +205,19 @@ def runpyano(filename):
 
     # set up the audio
     pygame.mixer.init(fps, -16, 2, 128)
-    keyboardkeys = open(conf['keyboard']).read().split('\n')
     sounds = map(pygame.sndarray.make_sound, wavs)
 
     # default range: starting from 2nd C from the left of an 88-key keyboard
     offset = 15
 
-    
-    # lists of all objects: 88 notes, 22 keys
+    # lists of all objects: 88 notes, 37 keys
     notes = [ Note(s) for s in sounds ]
-    keys = [ Key(notes[i+offset], i) for i in range(len(keyboardkeys)) ]
-    key_map = dict( zip(keyboardkeys, keys) ) 
+    pianokeys = [ PianoKey(notes[i+offset],
+                            i,
+                            screen,
+                            keyrects[i]) for i in range(len(keyrects)) ]
+    key_map = dict( zip(keyboardkeys, pianokeys) ) 
     
-    # status of keys as they appear in the window
-    is_key_down = {k: False for k in keys}
-    # status of the 88 virtual keys
-    is_playing = {i: False for i in range(len(sounds))}
-
     while True:
 
         event = pygame.event.wait()
@@ -224,16 +230,16 @@ def runpyano(filename):
             if (key in key_map.keys()):
                 key_map[key].press()
 
-            elif event.key == pygame.K_PAGEUP and offset <= len(sounds) - len(keys):
+            elif event.key == pygame.K_PAGEUP and offset < len(sounds) - len(pianokeys):
                 offset += 12
-                for key in key_map.values():
-                    key.update(notes[key.index + offset])
+                for pianokey in key_map.values():
+                    pianokey.update(notes[pianokey.index + offset])
                 print("Shift range UP an octave")
 
             elif event.key == pygame.K_PAGEDOWN and offset >= 12:
                 offset -= 12
-                for key in key_map.values():
-                    key.update(notes[key.index + offset])
+                for pianokey in key_map.values():
+                    pianokey.update(notes[pianokey.index + offset])
                 print("Shift range DOWN an octave")
 
             elif event.key == pygame.K_ESCAPE:

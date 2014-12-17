@@ -226,10 +226,14 @@ def runpyano(filename):
 
             elif event.key == pygame.K_PAGEUP and offset <= len(sounds) - len(keys):
                 offset += 12
+                for key in key_map.values():
+                    key.update(notes[key.index + offset])
                 print("Shift range UP an octave")
 
             elif event.key == pygame.K_PAGEDOWN and offset >= 12:
                 offset -= 12
+                for key in key_map.values():
+                    key.update(notes[key.index + offset])
                 print("Shift range DOWN an octave")
 
             elif event.key == pygame.K_ESCAPE:

@@ -8,6 +8,46 @@ import pygame
 # keep the config file wherever, just update this line accordingly
 configfile = "/home/ben/devel/pyano/.pyanoconfig"
 
+# a Note is a wrapper class for one of the 88 sounds
+class Note:
+
+    def __init__(self, snd):
+        self.sound = snd
+        self.is_playing = False
+        self.is_caught = False
+
+    def play(self):
+        self.sound.play()
+        self.is_playing = True
+
+    def stop(self):
+        self.sound.fadeout(50)
+        self.is_playing = False
+
+# a Key corresponds to one of the keyboard keys displayed on the screen
+class Key():
+
+    def __init__(self, n, i):
+        self.note = n
+        self.next_note = n
+        self.is_down = False
+        self.index = i
+
+    def press(self):
+        self.is_down = True
+        self.note.play()
+
+    def release(self):
+        self.is_down = False
+        if not(self.note.is_caught):
+            self.note.stop()
+        self.note = self.next_note
+
+    def update(self, n):
+        self.next_note = n
+        if not(self.is_down):
+            self.note = n
+
 # parses config file if it exists and return dictionary (empty on failure)
 # assumes config file is of form:
 # field:value
@@ -23,11 +63,13 @@ def getconfig(cfgfile):
 # assuming the directory at "libpath" contains 88 wav files plus the plaintext
 #   notelist file, this returns a tuple (bit_rate, list_of_wav_objects)
 # note to self: add error checking
-def getnotes(libpath):
-    notelist = open(libpath + "notelist").read().strip().split('\n')
-    notepairs = [ (wavfile.read(libpath + n)) for n in notelist ]
-    fps, note = notepairs[0]
-    return (fps, [ n for (f, n) in notepairs ])
+def getwavs(libpath):
+    wavlist = open(libpath + "notelist").read().strip().split('\n')
+    wavpairs = [ (wavfile.read(libpath + w)) for w in wavlist ]
+    if len(wavpairs) != 88:
+        raise Exception('Wrong number of notes! ' + len(wavpairs) + ' instead of 88')
+    fps, wav = wavpairs[0]
+    return (fps, [ n for (f, n) in wavpairs ])
 
 # colors used
 colors = {'white' : (255, 255, 255),
@@ -114,6 +156,7 @@ def drawkeyboard(img, krects):
     pygame.display.flip()
     return
 
+
 # k is the number of the key from 0 to 36 inclusive (3 octaves + extra at top)
 def depresskey(img, krects, k):
     (c, rects) = krects[k]
@@ -143,7 +186,7 @@ def runpyano(filename):
         print("Pyano: can't find config file")
         return
 
-    fps, notes = getnotes(conf['libpath'])
+    fps, wavs = getwavs(conf['libpath'])
 
     # set up the window and draw the keyboard
     screen = pygame.display.set_mode([770,150])
@@ -152,34 +195,34 @@ def runpyano(filename):
 
     # set up the audio
     pygame.mixer.init(fps, -16, 2, 128)
-    keys = open(conf['keyboard']).read().split('\n')
-    sounds = map(pygame.sndarray.make_sound, notes)
+    keyboardkeys = open(conf['keyboard']).read().split('\n')
+    sounds = map(pygame.sndarray.make_sound, wavs)
 
     # default range: starting from 2nd C from the left of an 88-key keyboard
     offset = 15
 
-    # we have two dictionaries: key -> key number (as in on a real piano)
-    # and key number -> sound
-    # this makes it easy to do transposition, simply by adding or subtracting
-    #   12 to raise or lower by an octave
-    key_num = dict( zip(keys, range(len(keys))) )
-    num_sound = dict( zip(range(len(sounds)), sounds) )
-
-    is_playing = {k: False for k in keys}
+    
+    # lists of all objects: 88 notes, 22 keys
+    notes = [ Note(s) for s in sounds ]
+    keys = [ Key(notes[i+offset], i) for i in range(len(keyboardkeys)) ]
+    key_map = dict( zip(keyboardkeys, keys) ) 
+    
+    # status of keys as they appear in the window
+    is_key_down = {k: False for k in keys}
+    # status of the 88 virtual keys
+    is_playing = {i: False for i in range(len(sounds))}
 
     while True:
 
-        event =  pygame.event.wait()
+        event = pygame.event.wait()
 
         if event.type in (pygame.KEYDOWN, pygame.KEYUP):
             key = pygame.key.name(event.key)
 
         if event.type == pygame.KEYDOWN:
 
-            if (key in key_num.keys()) and (not is_playing[key]):
-                depresskey(screen, keyrects, key_num[key])
-                num_sound[key_num[key]+offset].play()
-                is_playing[key] = True
+            if (key in key_map.keys()):
+                key_map[key].press()
 
             elif event.key == pygame.K_PAGEUP and offset <= len(sounds) - len(keys):
                 offset += 12
@@ -194,11 +237,11 @@ def runpyano(filename):
                 raise KeyboardInterrupt
                 return
 
-        elif event.type == pygame.KEYUP and key in key_num.keys():
+        elif event.type == pygame.KEYUP:
+        
+            if key in key_map.keys():
 
-            releasekey(screen, keyrects, key_num[key])
-            num_sound[key_num[key]+offset].fadeout(50) # stops with 50ms fadeout
-            is_playing[key] = False
+                key_map[key].release()
 
 # do everything
 runpyano(configfile)

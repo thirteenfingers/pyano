@@ -21,6 +21,7 @@ class Note:
         self.sound = snd
         self.is_playing = False
         self.is_caught = False
+        self.key = None
 
     def play(self):
         self.sound.play()
@@ -39,7 +40,8 @@ class PianoKey():
     # c_dc_rects : entry from the keyrects list
     def __init__(self, n, i, img, c_dc_rects):
         self.note = n
-        self.next_note = n
+        self.note.key = self # backward pointer
+        self.next_note = n # placeholder for range shifts
         self.is_down = False
         self.index = i
         self.img = img
@@ -60,6 +62,7 @@ class PianoKey():
         if not(self.note.is_caught):
             self.note.stop()
         self.note = self.next_note
+        self.note.key = self
         for r in self.rects:
             self.img.fill(self.color, r)
             pygame.display.update(r)
@@ -67,6 +70,7 @@ class PianoKey():
     def update(self, n):
         self.next_note = n
         if not(self.is_down):
+            n.key = self
             self.note = n
 
 # parses config file if it exists and return dictionary (empty on failure)
@@ -171,21 +175,6 @@ def drawkeyboard(img, krects):
     pygame.display.flip()
     return
 
-# k is the number of the key from 0 to 36 inclusive (3 octaves + extra at top)
-def depresskey(img, krects, k):
-    (c, downc, rects) = krects[k]
-    for r in rects:
-        img.fill(colors[downc], r)
-        pygame.display.update(r)
-    return
-
-def releasekey(img, krects, k):
-    (c, downc, rects) = krects[k]
-    for r in rects:
-        img.fill(colors[c], r)
-        pygame.display.update(r)
-    return
-
 # the main main main function
 # takes filepath of configuration file
 def runpyano(filename):
@@ -216,7 +205,8 @@ def runpyano(filename):
                             i,
                             screen,
                             keyrects[i]) for i in range(len(keyrects)) ]
-    key_map = dict( zip(keyboardkeys, pianokeys) ) 
+    key_map = dict( zip(keyboardkeys, pianokeys) )
+    is_pedal_down = False
     
     while True:
 
@@ -227,20 +217,34 @@ def runpyano(filename):
 
         if event.type == pygame.KEYDOWN:
 
+            # all regular piano keys
             if (key in key_map.keys()):
                 key_map[key].press()
+                if is_pedal_down:
+                    key_map[key].note.is_caught = True
 
+            # range shift up
             elif event.key == pygame.K_PAGEUP and offset < len(sounds) - len(pianokeys):
                 offset += 12
                 for pianokey in key_map.values():
                     pianokey.update(notes[pianokey.index + offset])
                 print("Shift range UP an octave")
 
+            # range shift down
             elif event.key == pygame.K_PAGEDOWN and offset >= 12:
                 offset -= 12
                 for pianokey in key_map.values():
                     pianokey.update(notes[pianokey.index + offset])
                 print("Shift range DOWN an octave")
+
+            # sustain pedal
+            elif event.key == pygame.K_SPACE:
+                # do shit
+                is_pedal_down = True
+                for note in notes:
+                    if note.is_playing:
+                        note.is_caught = True
+                print("Ped.")
 
             elif event.key == pygame.K_ESCAPE:
                 pygame.quit()
@@ -248,10 +252,20 @@ def runpyano(filename):
                 return
 
         elif event.type == pygame.KEYUP:
-        
+       
+            # regular piano keys
             if key in key_map.keys():
-
                 key_map[key].release()
+
+            # sustain pedal
+            elif event.key == pygame.K_SPACE:
+                # do shit
+                is_pedal_down = False
+                for note in notes:
+                    note.is_caught = False
+                    if (not (note.key is None)) and (not note.key.is_down):
+                        note.stop()
+                print("*")
 
 # do everything
 runpyano(configfile)

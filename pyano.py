@@ -14,22 +14,41 @@ colors = {'white' : (255, 255, 255),
           'black' : (32, 32, 32),
           'downblack' : (64, 64, 64)}
 
-# a Note is a wrapper class for one of the 88 sounds
+# Note is a wrapper class for one of the 88 sounds
 class Note:
 
     def __init__(self, snd):
         self.sound = snd
-        self.is_playing = False
-        self.is_caught = False
+        self.playing = False
+        self.caught = False # for sustain pedal
         self.key = None
 
     def play(self):
+        if self.playing:
+            self.sound.fadeout(50)
         self.sound.play()
-        self.is_playing = True
+        self.playing = True
 
     def stop(self):
         self.sound.fadeout(50)
-        self.is_playing = False
+        self.playing = False
+
+    def catch(self):
+        self.caught = True
+
+    def uncatch(self):
+        self.caught = False
+        if (not (self.key is None)) and (not self.key.is_down()):
+            self.stop()
+
+    def is_caught(self):
+        return self.caught
+
+    def get_key(self):
+        return self.key
+
+    def set_key(self, k):
+        self.key = k
 
 # a PianoKey corresponds to one of the keyboard keys displayed on the screen
 class PianoKey():
@@ -40,9 +59,9 @@ class PianoKey():
     # c_dc_rects : entry from the keyrects list
     def __init__(self, n, i, img, c_dc_rects):
         self.note = n
-        self.note.key = self # backward pointer
+        self.note.set_key(self) # backward pointer
         self.next_note = n # placeholder for range shifts
-        self.is_down = False
+        self.down = False
         self.index = i
         self.img = img
         (c, dc, rects) = c_dc_rects
@@ -51,27 +70,33 @@ class PianoKey():
         self.downcolor = colors[dc]
 
     def press(self):
-        self.is_down = True
+        self.down = True
         self.note.play()
         for r in self.rects:
             self.img.fill(self.downcolor, r)
             pygame.display.update(r)
 
     def release(self):
-        self.is_down = False
-        if not(self.note.is_caught):
+        self.down = False
+        if not(self.note.is_caught()):
             self.note.stop()
         self.note = self.next_note
-        self.note.key = self
+        self.note.set_key(self)
         for r in self.rects:
             self.img.fill(self.color, r)
             pygame.display.update(r)
 
     def update(self, n):
         self.next_note = n
-        if not(self.is_down):
-            n.key = self
+        if not(self.down):
+            n.set_key(self)
             self.note = n
+
+    def get_index(self):
+        return self.index
+
+    def is_down(self):
+        return self.down
 
 # parses config file if it exists and return dictionary (empty on failure)
 # assumes config file is of form:
@@ -194,6 +219,7 @@ def runpyano(filename):
 
     # set up the audio
     pygame.mixer.init(fps, -16, 2, 128)
+    pygame.mixer.set_num_channels(24)
     sounds = map(pygame.sndarray.make_sound, wavs)
 
     # default range: starting from 2nd C from the left of an 88-key keyboard
@@ -220,21 +246,19 @@ def runpyano(filename):
             # all regular piano keys
             if (key in key_map.keys()):
                 key_map[key].press()
-                if is_pedal_down:
-                    key_map[key].note.is_caught = True
 
             # range shift up
             elif event.key == pygame.K_PAGEUP and offset < len(sounds) - len(pianokeys):
                 offset += 12
                 for pianokey in key_map.values():
-                    pianokey.update(notes[pianokey.index + offset])
+                    pianokey.update(notes[pianokey.get_index() + offset])
                 print("Shift range UP an octave")
 
             # range shift down
             elif event.key == pygame.K_PAGEDOWN and offset >= 12:
                 offset -= 12
                 for pianokey in key_map.values():
-                    pianokey.update(notes[pianokey.index + offset])
+                    pianokey.update(notes[pianokey.get_index() + offset])
                 print("Shift range DOWN an octave")
 
             # sustain pedal
@@ -242,8 +266,7 @@ def runpyano(filename):
                 # do shit
                 is_pedal_down = True
                 for note in notes:
-                    if note.is_playing:
-                        note.is_caught = True
+                    note.catch()
                 print("Ped.")
 
             elif event.key == pygame.K_ESCAPE:
@@ -262,9 +285,7 @@ def runpyano(filename):
                 # do shit
                 is_pedal_down = False
                 for note in notes:
-                    note.is_caught = False
-                    if (not (note.key is None)) and (not note.key.is_down):
-                        note.stop()
+                    note.uncatch()
                 print("*")
 
 # do everything

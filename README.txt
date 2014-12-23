@@ -8,3 +8,10 @@ This is a work in progress, and there is a great deal of error checking (such as
 z x cv b n m, . /q w e rt y ui o p []
 
 Also, I have found that certain combinations of three or more simultaneous notes may not play properly. As far as I can tell this is a hardware limitation.
+
+*** EDIT (2014-12-22) ***
+
+The spacebar now acts as the sustain pedal. Also, since I apparently forgot to mention it earlier, you hit 'escape' to quit.
+
+While implementing the spacebar-pedal I discovered it was easiest to rip out the innards of the original program and rewrite it in a more object-oriented fashion; Keys and Notes are now objects with pointers to each other. It is my hope that this new workalike version will also facilitate the development of other features.
+

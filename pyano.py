@@ -38,7 +38,9 @@ class Note:
 
     def uncatch(self):
         self.caught = False
-        if (not (self.key is None)) and (not self.key.is_down()):
+        if (self.key is None):
+            self.stop()
+        elif not(self.key.is_down()):
             self.stop()
 
     def is_caught(self):
@@ -80,6 +82,9 @@ class PianoKey():
         self.down = False
         if not(self.note.is_caught()):
             self.note.stop()
+        # if no other key is pointing to this note already
+        if (self.note.get_key() == self):
+            self.note.set_key(None)
         self.note = self.next_note
         self.note.set_key(self)
         for r in self.rects:
@@ -90,6 +95,9 @@ class PianoKey():
         self.next_note = n
         if not(self.down):
             n.set_key(self)
+            # if no other key is pointing to this note already
+            if (self.note.get_key() == self):
+                self.note.set_key(None)
             self.note = n
 
     def get_index(self):

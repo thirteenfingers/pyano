@@ -58,7 +58,8 @@ class PianoKey():
     # n : Note object
     # i : index from 0 to 36 of the 3-octave keyboard
     # img : the pygame screen
-    # c_dc_rects : entry from the keyrects list
+    # c_dc_rects : entry from the keyrects list -
+    #       tuple containing color, down-color, list of pygame.Rect objects
     def __init__(self, n, i, img, c_dc_rects):
         self.note = n
         self.note.set_key(self) # backward pointer

@@ -1,6 +1,15 @@
 Desired Features:
 
-Space bar = Sustain pedal
+Should be rewritten as a flexible, installable script
+    * depends on scipy, pygame, os, re
+    * should be able to locate the config file(s) easily
+
+Should be able to switch between two keyboard layouts:
+    * 3 octaves - uses computer keys in a piano-like arrangement
+        - currently this is the only one supported
+    * 4 octaves - uses ALL THE KEYS in an unintuitive way
+
+Space bar = Sustain pedal   Edit: DONE
     * should be very simple
 
 Shift keys = Octave doubling
